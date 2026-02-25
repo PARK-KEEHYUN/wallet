@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cute Pomodoro - 집중하는 고양이</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Outfit -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <!-- React & Babel CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at center, #1e1b4b 0%, #0f172a 100%);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .timer-glow {
+            filter: drop-shadow(0 0 20px rgba(167, 139, 250, 0.4));
+        }
+
+        .btn-3d {
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-3d:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .floating {
+            animation: float 4s ease-in-out infinite;
+        }
+    </style>
+</head>
+
+<body class="flex items-center justify-center text-white">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const PomodoroApp = () => {
+            const [timeLeft, setTimeLeft] = useState(25 * 60);
+            const [isActive, setIsActive] = useState(false);
+            const [sessionType, setSessionType] = useState('FOCUS'); // FOCUS or BREAK
+            const timerRef = useRef(null);
+
+            // Weekly stats state
+            const [stats, setStats] = useState(() => {
+                const saved = localStorage.getItem('pomodoro_stats');
+                return saved ? JSON.parse(saved) : [0, 0, 0, 0, 0, 0, 0]; // Mon-Sun
+            });
+
+            useEffect(() => {
+                localStorage.setItem('pomodoro_stats', JSON.stringify(stats));
+            }, [stats]);
+
+            useEffect(() => {
+                if (isActive && timeLeft > 0) {
+                    timerRef.current = setInterval(() => {
+                        setTimeLeft(prev => prev - 1);
+                    }, 1000);
+                } else if (timeLeft === 0) {
+                    handleSessionEnd();
+                } else {
+                    clearInterval(timerRef.current);
+                }
+                return () => clearInterval(timerRef.current);
+            }, [isActive, timeLeft]);
+
+            const handleSessionEnd = () => {
+                const nextType = sessionType === 'FOCUS' ? 'BREAK' : 'FOCUS';
+
+                if (sessionType === 'FOCUS') {
+                    // Record focus time (25 minutes)
+                    const today = new Date().getDay(); // 0 is Sunday
+                    const index = today === 0 ? 6 : today - 1; // Map to 0-6 (Mon-Sun)
+                    const newStats = [...stats];
+                    newStats[index] += 25;
+                    setStats(newStats);
+                }
+
+                setSessionType(nextType);
+                setTimeLeft(nextType === 'FOCUS' ? 25 * 60 : 5 * 60);
+                setIsActive(false);
+                alert(nextType === 'FOCUS' ? 'Break is over! Time to focus! 🐱' : 'Focus session finished! Good job! 🥤');
+            };
+
+            const toggleTimer = () => setIsActive(!isActive);
+
+            const resetTimer = () => {
+                setIsActive(false);
+                setSessionType('FOCUS');
+                setTimeLeft(25 * 60);
+            };
+
+            const formatTime = (seconds) => {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            };
+
+            const progress = sessionType === 'FOCUS'
+                ? (timeLeft / (25 * 60)) * 100
+                : (timeLeft / (5 * 60)) * 100;
+
+            const days = ['월', '화', '수', '목', '금', '토', '일'];
+            const maxStat = Math.max(...stats, 60); // min max for scale
+
+            return (
+                <div className="flex flex-col items-center justify-center p-4 w-full max-w-4xl lg:flex-row lg:gap-12">
+                    {/* Main Timer Section */}
+                    <div className="flex flex-col items-center w-full max-w-md mb-12 lg:mb-0">
+                        {/* Floating Mascot */}
+                        <div className="mb-6 text-6xl floating relative">
+                            {sessionType === 'FOCUS' ? '🐱💻' : '🐱☕'}
+                            <div className="absolute -top-2 -right-2 w-4 h-4 bg-pink-500 rounded-full animate-ping"></div>
+                        </div>
+
+                        <div className="glass rounded-[3rem] p-10 w-full flex flex-col items-center timer-glow relative overflow-hidden">
+                            {/* Session Label */}
+                            <div className={`px-4 py-1 rounded-full text-xs font-extrabold tracking-widest mb-6 ${sessionType === 'FOCUS' ? 'bg-indigo-500/30 text-indigo-300' : 'bg-emerald-500/30 text-emerald-300'
+                                }`}>
+                                {sessionType === 'FOCUS' ? 'FOCUS SESSION' : 'SHORT BREAK'}
+                            </div>
+
+                            {/* Large Timer Display */}
+                            <div className="text-8xl font-extrabold mb-8 tracking-tighter">
+                                {formatTime(timeLeft)}
+                            </div>
+
+                            {/* Progress Bar Container */}
+                            <div className="w-full h-2 bg-white/10 rounded-full mb-10 overflow-hidden">
+                                <div
+                                    className={`h-full transition-all duration-1000 ease-linear ${sessionType === 'FOCUS' ? 'bg-indigo-400' : 'bg-emerald-400'
+                                        }`}
+                                    style={{ width: `${100 - progress}%` }}
+                                ></div>
+                            </div>
+
+                            {/* Controls */}
+                            <div className="flex gap-6">
+                                <button
+                                    onClick={toggleTimer}
+                                    className={`w-20 h-20 rounded-full flex items-center justify-center btn-3d ${isActive ? 'bg-red-500 text-white' : 'bg-indigo-500 text-white'
+                                        }`}
+                                >
+                                    {isActive ?
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="4" height="16" x="6" y="4" /><rect width="4" height="16" x="14" y="4" /></svg>
+                                        :
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="ml-1"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+                                    }
+                                </button>
+
+                                <button
+                                    onClick={resetTimer}
+                                    className="w-20 h-20 rounded-full flex items-center justify-center glass text-white/70 hover:text-white btn-3d"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Stats Section */}
+                    <div className="glass rounded-[2rem] p-8 w-full max-w-md flex flex-col">
+                        <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                            <span className="p-2 bg-indigo-500/20 rounded-lg">📊</span>
+                            주간 집중 리포트
+                        </h3>
+
+                        <div className="flex items-end justify-between gap-2 h-48 mb-6 px-2">
+                            {stats.map((minutes, idx) => (
+                                <div key={idx} className="flex flex-col items-center flex-1 group">
+                                    <div className="relative w-full flex flex-col justify-end h-full">
+                                        {/* Tooltip */}
+                                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-indigo-900 text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                            {minutes}분
+                                        </div>
+                                        {/* Bar */}
+                                        <div
+                                            className={`w-full rounded-t-lg transition-all duration-500 ${new Date().getDay() === (idx === 6 ? 0 : idx + 1)
+                                                    ? 'bg-gradient-to-t from-indigo-600 to-indigo-400'
+                                                    : 'bg-white/10 group-hover:bg-white/20'
+                                                }`}
+                                            style={{ height: `${(minutes / maxStat) * 100}%`, minHeight: minutes > 0 ? '4px' : '0' }}
+                                        ></div>
+                                    </div>
+                                    <span className={`text-xs mt-3 ${new Date().getDay() === (idx === 6 ? 0 : idx + 1) ? 'text-indigo-400 font-bold' : 'text-white/40'}`}>
+                                        {days[idx]}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="bg-white/5 rounded-2xl p-4 flex justify-between items-center">
+                            <div>
+                                <p className="text-white/40 text-xs mb-1">총 집중 시간</p>
+                                <p className="text-2xl font-bold">{stats.reduce((a, b) => a + b, 0)}<span className="text-sm ml-1 font-normal opacity-60">분</span></p>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-white/40 text-xs mb-1">오늘 성공</p>
+                                <p className="text-2xl font-bold text-indigo-400">
+                                    {stats[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1] / 25}
+                                    <span className="text-sm ml-1 font-normal opacity-60">회</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<PomodoroApp />);
+    </script>
+</body>
+
+</html>
