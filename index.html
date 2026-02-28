@@ -1,165 +1,19 @@
-<!DOCTYPE html>
-<html lang="ko">
+<!doctype html>
+<html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎱 로또 6/45 추첨기</title>
-    <meta name="description" content="한국 로또 6/45 번호 추첨 시뮬레이터. 45개의 공 중 행운의 번호를 뽑아보세요!">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Scheduler & Diary</title>
+    <!-- Inter Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Noto+Sans+KR:wght@400;600;700;900&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
-<body>
-    <div class="bg-particles" id="bgParticles"></div>
-
-    <div class="container">
-        <header class="header">
-            <div class="logo-area">
-                <div class="logo-icon">🎱</div>
-                <h1>로또 <span class="highlight">6/45</span> 추첨기</h1>
-            </div>
-            <p class="subtitle">45개의 공 중 행운의 번호를 뽑아보세요!</p>
-        </header>
-
-        <!-- 45개 공 디스플레이 영역 -->
-        <section class="ball-pool-section">
-            <div class="section-label">
-                <span class="label-icon">🎰</span>
-                <span>추첨 풀</span>
-            </div>
-            <div class="ball-pool" id="ballPool">
-                <!-- 45개 공이 JS로 생성됩니다 -->
-            </div>
-        </section>
-
-        <!-- 추첨 결과 영역 -->
-        <section class="result-section">
-            <div class="section-label">
-                <span class="label-icon">🏆</span>
-                <span>추첨 결과</span>
-            </div>
-            <div class="result-area">
-                <div class="result-balls" id="resultBalls">
-                    <div class="result-slot empty" data-index="0"><span>?</span></div>
-                    <div class="result-slot empty" data-index="1"><span>?</span></div>
-                    <div class="result-slot empty" data-index="2"><span>?</span></div>
-                    <div class="result-slot empty" data-index="3"><span>?</span></div>
-                    <div class="result-slot empty" data-index="4"><span>?</span></div>
-                    <div class="result-slot empty" data-index="5"><span>?</span></div>
-                    <div class="bonus-separator">+</div>
-                    <div class="result-slot bonus empty" data-index="6"><span>?</span></div>
-                </div>
-                <div class="result-labels">
-                    <span class="main-label">당첨 번호</span>
-                    <span class="bonus-label">보너스</span>
-                </div>
-            </div>
-        </section>
-
-        <!-- 컨트롤 영역 -->
-        <section class="controls">
-            <button class="btn btn-draw" id="btnDraw" onclick="startDraw()">
-                <span class="btn-icon">🎲</span>
-                <span class="btn-text">추첨 시작</span>
-            </button>
-            <button class="btn btn-reset" id="btnReset" onclick="resetDraw()" disabled>
-                <span class="btn-icon">🔄</span>
-                <span class="btn-text">다시 뽑기</span>
-            </button>
-            <button class="btn btn-copy" id="btnCopy" onclick="copyResult()" disabled>
-                <span class="btn-icon">📋</span>
-                <span class="btn-text">결과 복사</span>
-            </button>
-        </section>
-
-        <!-- 추첨 히스토리 -->
-        <section class="history-section" id="historySection" style="display: none;">
-            <div class="section-label">
-                <span class="label-icon">📋</span>
-                <span>추첨 기록</span>
-            </div>
-            <div class="history-list" id="historyList"></div>
-        </section>
-
-        <!-- 구분선 -->
-        <div class="section-divider"></div>
-
-        <!-- 역대 당첨번호 섹션 -->
-        <section class="db-section" id="dbSection">
-            <div class="section-label">
-                <span class="label-icon">📊</span>
-                <span>역대 당첨번호</span>
-                <span class="db-badge" id="dbBadge">로딩중...</span>
-            </div>
-
-            <!-- 검색 필터 -->
-            <div class="search-area">
-                <div class="search-group">
-                    <label for="searchRound">🔍 회차 검색</label>
-                    <div class="search-input-wrap">
-                        <input type="number" id="searchRound" placeholder="예: 1213" min="1" />
-                        <button class="btn-search" onclick="searchByRound()">검색</button>
-                    </div>
-                </div>
-                <div class="search-group">
-                    <label for="searchNumber">🎯 번호 검색</label>
-                    <div class="search-input-wrap">
-                        <input type="number" id="searchNumber" placeholder="1~45" min="1" max="45" />
-                        <button class="btn-search" onclick="searchByNumber()">검색</button>
-                    </div>
-                </div>
-                <button class="btn-reset-search" onclick="resetSearch()">전체 보기</button>
-            </div>
-
-            <!-- 검색 결과 메시지 -->
-            <div class="search-result-msg" id="searchResultMsg" style="display:none;"></div>
-
-            <!-- 당첨번호 목록 -->
-            <div class="db-table-wrap">
-                <table class="db-table" id="dbTable">
-                    <thead>
-                        <tr>
-                            <th>회차</th>
-                            <th>추첨일</th>
-                            <th>당첨번호</th>
-                            <th>보너스</th>
-                        </tr>
-                    </thead>
-                    <tbody id="dbTableBody">
-                        <tr>
-                            <td colspan="4" class="loading-cell">데이터 로딩 중...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- 페이지네이션 -->
-            <div class="pagination" id="pagination"></div>
-
-            <!-- 번호별 통계 -->
-            <div class="stats-section">
-                <div class="section-label">
-                    <span class="label-icon">📈</span>
-                    <span>번호별 출현 통계</span>
-                </div>
-                <div class="stats-grid" id="statsGrid"></div>
-                <p class="stats-note" id="statsNote"></p>
-            </div>
-        </section>
-
-        <footer class="footer">
-            <p>본 시뮬레이터는 오락 목적으로 제작되었습니다.</p>
-            <p>실제 로또 당첨과는 무관합니다.</p>
-        </footer>
-    </div>
-
-    <script src="lotto-db.js"></script>
-    <script src="app.js"></script>
+<body class="bg-gray-950 text-white min-h-screen selection:bg-brand selection:text-white">
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
 </body>
 
 </html>
